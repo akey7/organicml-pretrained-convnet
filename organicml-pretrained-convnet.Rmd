@@ -17,7 +17,7 @@ library(keras)
 
 There is a small dataset of 410 images. They are split like this:
 
-|dataset|benzene images|non-benzene images
+|dataset|benzene ring images|non benzene ring images
 |---|---|---|
 |train|125|125|
 |validation|25|25|
@@ -34,6 +34,8 @@ test_dir <- "data/test"
 Use data augmentation on the training set, but not the validation set.
 
 ```{r}
+test_validation_batch_size <- 25
+
 validation_datagen <- image_data_generator(rescale = 1/255)
 
 train_datagen <- image_data_generator(
@@ -50,7 +52,7 @@ train_generator <- flow_images_from_directory(
   train_dir,
   train_datagen,
   target_size = c(256, 256),
-  batch_size = 20,
+  batch_size = test_validation_batch_size,
   class_mode = "binary"
 )
 
@@ -58,7 +60,7 @@ validation_generator <- flow_images_from_directory(
   validation_dir,
   validation_datagen,
   target_size = c(256, 256),
-  batch_size = 20,
+  batch_size = test_validation_batch_size,
   class_mode = "binary"
 )
 ```
@@ -71,7 +73,7 @@ Use VGG16 trained on imagenet for the convolutional layers. Freeze the convoluti
 conv_base <- application_vgg16(
   weights = "imagenet",
   include_top = FALSE,
-  input_shape = c(256, 256, 3)  # 256x256 1 color channel because images are grayscale
+  input_shape = c(256, 256, 3)
 )
 
 conv_base %>% freeze_weights()
@@ -80,7 +82,9 @@ network <- keras_model_sequential() %>%
   conv_base %>%
   layer_flatten() %>%
   layer_dense(units = 256, activation = "relu") %>%
-  layer_dense(units = 1, activation = "sigmoid")
+  layer_dense(units = 128, activation = "relu") %>%
+  layer_dense(units = 64, activation = "relu") %>%
+ layer_dense(units = 1, activation = "sigmoid")
 
 network %>% compile(
   loss = "binary_crossentropy",
@@ -93,18 +97,21 @@ summary(network)
 
 ## Fit the network using the training and validation data
 
+The `steps_per_epoch` are calculated from the image generator batch size, according to the following StackOverflow post:
+
+[https://stackoverflow.com/questions/60509425/how-to-use-repeat-function-when-building-data-in-keras](https://stackoverflow.com/questions/60509425/how-to-use-repeat-function-when-building-data-in-keras)
+
+
 ```{r}
 history <- network %>%
   fit(
     train_generator,
-    steps_per_epoch = 100,
-    epochs = 30,
+    steps_per_epoch = 250/test_validation_batch_size,
+    epochs = 25,
     validation_data = validation_generator,
-    validation_steps = 50
+    validation_steps = 50/test_validation_batch_size
   )
 ```
-
-## Save the model
 
 ## Save the model
 
