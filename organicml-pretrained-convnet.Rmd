@@ -33,36 +33,42 @@ test_dir <- "data/test"
 
 Use data augmentation on the training set, but not the validation set.
 
+Create a function to create the generators. This function will be called twice. The first time will be during training of the first network. The second time will be training the second network.
+
 ```{r warning=FALSE}
-test_validation_batch_size <- 25
+create_generators <- function(test_validation_batch_size) {
+  validation_datagen <- image_data_generator(rescale = 1/255)
 
-validation_datagen <- image_data_generator(rescale = 1/255)
-
-train_datagen <- image_data_generator(
-  rescale = 1/255,
-  rotation_range = 90,
-  width_shift_range = 0.01,
-  height_shift_range = 0.01,
-  shear_range = 0.2,
-  zoom_range = 0.01,
-  horizontal_flip = TRUE
-)
-
-train_generator <- flow_images_from_directory(
-  train_dir,
-  train_datagen,
-  target_size = c(256, 256),
-  batch_size = test_validation_batch_size,
-  class_mode = "binary"
-)
-
-validation_generator <- flow_images_from_directory(
-  validation_dir,
-  validation_datagen,
-  target_size = c(256, 256),
-  batch_size = test_validation_batch_size,
-  class_mode = "binary"
-)
+  # train_datagen <- image_data_generator(
+  #   rescale = 1/255,
+  #   rotation_range = 90,
+  #   width_shift_range = 0.01,
+  #   height_shift_range = 0.01,
+  #   shear_range = 0.2,
+  #   zoom_range = 0.01,
+  #   horizontal_flip = TRUE
+  # )
+  
+  train_datagen <- image_data_generator(rescale = 1/255)
+  
+  train_generator <- flow_images_from_directory(
+    train_dir,
+    train_datagen,
+    target_size = c(256, 256),
+    batch_size = test_validation_batch_size,
+    class_mode = "binary"
+  )
+  
+  validation_generator <- flow_images_from_directory(
+    validation_dir,
+    validation_datagen,
+    target_size = c(256, 256),
+    batch_size = test_validation_batch_size,
+    class_mode = "binary"
+  )
+  
+  list(train_generator = train_generator, validation_generator = validation_generator)
+}
 ```
 
 ## Define the network
@@ -114,12 +120,14 @@ The `steps_per_epoch` are calculated from the image generator batch size, accord
 
 
 ```{r error=FALSE, results='hide'}
+test_validation_batch_size <- 25
+generators_1 <- create_generators(test_validation_batch_size = test_validation_batch_size)
 fit_history_1 <- convnet_1 %>%
   fit(
-    train_generator,
+    generators_1$train_generator,
     steps_per_epoch = 250/test_validation_batch_size,
-    epochs = 50,
-    validation_data = validation_generator,
+    epochs = 25,
+    validation_data = generators_1$validation_generator,
     validation_steps = 50/test_validation_batch_size
   )
 ```
@@ -141,16 +149,18 @@ cat("Epoch of maximum validation accuracy: ", argmax_val_accuracy_1, "\n")
 
 ## Retrain for the optimum number of epochs
 
-Start everything over with a new network
+Start everything over with a new network and new generators.
 
 ```{r error=FALSE, results='hide'}
 convnet_2 <- create_network()
+test_validation_batch_size <- 25
+generators_2 <- create_generators(test_validation_batch_size = test_validation_batch_size)
 fit_history_2 <- convnet_2 %>%
   fit(
-    train_generator,
+    generators_2$train_generator,
     steps_per_epoch = 250/test_validation_batch_size,
     epochs = argmax_val_accuracy_1,
-    validation_data = validation_generator,
+    validation_data = generators_2$validation_generator,
     validation_steps = 50/test_validation_batch_size
   )
 ```
