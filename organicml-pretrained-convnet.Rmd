@@ -16,18 +16,16 @@ library(tensorflow)
 
 ## Define where the image datasets are
 
-There is a small dataset of 410 images. They are split like this:
+There is a small dataset of 410 images. Because there are so few images, I will just work with a training and validation set, and I will not use a separate test dataset.
 
 |dataset|benzene ring images|non benzene ring images
 |---|---|---|
-|train|125|125|
-|validation|25|25|
-|test|55|55|
+|train|150|150|
+|validation|55|55|
 
 ```{r}
 train_dir <- "data/train"
 validation_dir <- "data/validation"
-test_dir <- "data/test"
 ```
 
 ## Create the image generators
@@ -78,7 +76,7 @@ create_generators <- function(test_validation_batch_size) {
 
 Use VGG16 trained on imagenet for the convolutional layers. Freeze the convolutional layers so that their weights are not adjusted during training. The final layers will be a simple binary classifier made with dense layers.
 
-First, make a function that can return the same network set up multiple times. It will be called twice: during the initial training and after the optimal number of epochs is reached.
+First, make a function that can return an initalized network.
 
 ```{r}
 create_network <- function() {
@@ -129,10 +127,10 @@ generators_1 <- create_generators(test_validation_batch_size = test_validation_b
 fit_history_1 <- convnet_1 %>%
   fit(
     generators_1$train_generator,
-    steps_per_epoch = 250/test_validation_batch_size,
-    epochs = 50,
+    steps_per_epoch = 300/test_validation_batch_size,
+    epochs = 21,
     validation_data = generators_1$validation_generator,
-    validation_steps = 50/test_validation_batch_size
+    validation_steps = 110/test_validation_batch_size
   )
 ```
 
@@ -151,40 +149,4 @@ cat("Maximum val_accuracy: ", max_val_accuracy_1, "\n")
 cat("Epoch of maximum validation accuracy: ", argmax_val_accuracy_1, "\n")
 ```
 
-## Retrain for the optimum number of epochs
 
-Start everything over with a new network and new generators.
-
-```{r error=FALSE, results='hide'}
-tensorflow::set_random_seed(0)
-convnet_2 <- create_network()
-test_validation_batch_size <- 25
-generators_2 <- create_generators(test_validation_batch_size = test_validation_batch_size)
-fit_history_2 <- convnet_2 %>%
-  fit(
-    generators_2$train_generator,
-    steps_per_epoch = 250/test_validation_batch_size,
-    epochs = argmax_val_accuracy_1,
-    validation_data = generators_2$validation_generator,
-    validation_steps = 50/test_validation_batch_size
-  )
-```
-
-Plot the results with the new network.
-
-```{r}
-plot(fit_history_2)
-```
-
-Analyze the results of the new network
-
-```{r}
-max_val_accuracy_2 <- max(fit_history_2$metrics$val_accuracy)
-argmax_val_accuracy_2 <- which.max(fit_history_2$metrics$val_accuracy)
-cat("Maximum val_accuracy: ", max_val_accuracy_2, "\n")
-cat("Epoch of maximum validation accuracy: ", argmax_val_accuracy_2, "\n")
-```
-
-```{r echo=FALSE}
-convnet_2 %>% save_model_hdf5("convnet_and_classifier.h5")
-```
