@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(keras)
+library(ramify)
 ```
 
 ## Define where the image datasets are
@@ -33,7 +34,7 @@ test_dir <- "data/test"
 
 Use data augmentation on the training set, but not the validation set.
 
-```{r}
+```{r warning=FALSE}
 test_validation_batch_size <- 25
 
 validation_datagen <- image_data_generator(rescale = 1/255)
@@ -69,7 +70,7 @@ validation_generator <- flow_images_from_directory(
 
 Use VGG16 trained on imagenet for the convolutional layers. Freeze the convolutional layers so that their weights are not adjusted during training. The final layers will be a simple binary classifier made with dense layers.
 
-```{r}
+```{r error=FALSE}
 conv_base <- application_vgg16(
   weights = "imagenet",
   include_top = FALSE,
@@ -102,8 +103,8 @@ The `steps_per_epoch` are calculated from the image generator batch size, accord
 [https://stackoverflow.com/questions/60509425/how-to-use-repeat-function-when-building-data-in-keras](https://stackoverflow.com/questions/60509425/how-to-use-repeat-function-when-building-data-in-keras)
 
 
-```{r}
-history <- network %>%
+```{r error=FALSE, results='hide'}
+fit_history <- network %>%
   fit(
     train_generator,
     steps_per_epoch = 250/test_validation_batch_size,
@@ -113,8 +114,22 @@ history <- network %>%
   )
 ```
 
-## Save the model
+## Analyze training hisotry
 
 ```{r}
+plot(fit_history)
+```
+
+What epoch had the maximum validation accuracy?
+
+```{r}
+max_val_accuracy <- max(fit_history$metrics$val_accuracy)
+argmax_val_accuracy <- which.max(fit_history$metrics$val_accuracy)
+cat("Maximum val_accuracy: ", max_val_accuracy, "\n")
+cat("Epoch of maximum validation accuracy: ", argmax_val_accuracy, "\n")
+fit_history$metrics$val_accuracy[argmax_val_accuracy]
+```
+
+```{r echo=FALSE}
 network %>% save_model_hdf5("convnet_and_classifier.h5")
 ```
