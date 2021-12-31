@@ -11,7 +11,6 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(keras)
-library(ramify)
 ```
 
 ## Define where the image datasets are
@@ -70,30 +69,41 @@ validation_generator <- flow_images_from_directory(
 
 Use VGG16 trained on imagenet for the convolutional layers. Freeze the convolutional layers so that their weights are not adjusted during training. The final layers will be a simple binary classifier made with dense layers.
 
-```{r error=FALSE}
-conv_base <- application_vgg16(
-  weights = "imagenet",
-  include_top = FALSE,
-  input_shape = c(256, 256, 3)
-)
+First, make a function that can return the same network set up multiple times. It will be called twice: during the initial training and after the optimal number of epochs is reached.
 
-conv_base %>% freeze_weights()
+```{r}
+create_network <- function() {
+  conv_base <- application_vgg16(
+    weights = "imagenet",
+    include_top = FALSE,
+    input_shape = c(256, 256, 3)
+  )
+  
+  conv_base %>% freeze_weights()
+  
+  network <- keras_model_sequential() %>%
+    conv_base %>%
+    layer_flatten() %>%
+    layer_dense(units = 256, activation = "relu") %>%
+    layer_dense(units = 128, activation = "relu") %>%
+    layer_dense(units = 64, activation = "relu") %>%
+   layer_dense(units = 1, activation = "sigmoid")
+  
+  network %>% compile(
+    loss = "binary_crossentropy",
+    optimizer = optimizer_rmsprop(learning_rate = 2e-5),
+    metrics = c("accuracy")
+  )
+  
+  network
+}
+```
 
-network <- keras_model_sequential() %>%
-  conv_base %>%
-  layer_flatten() %>%
-  layer_dense(units = 256, activation = "relu") %>%
-  layer_dense(units = 128, activation = "relu") %>%
-  layer_dense(units = 64, activation = "relu") %>%
- layer_dense(units = 1, activation = "sigmoid")
+Now use the function to create the network
 
-network %>% compile(
-  loss = "binary_crossentropy",
-  optimizer = optimizer_rmsprop(learning_rate = 2e-5),
-  metrics = c("accuracy")
-)
-
-summary(network)
+```{r error=FALSE, warning=FALSE}
+convnet_1 <- create_network()
+summary(convnet_1)
 ```
 
 ## Fit the network using the training and validation data
@@ -104,7 +114,7 @@ The `steps_per_epoch` are calculated from the image generator batch size, accord
 
 
 ```{r error=FALSE, results='hide'}
-fit_history <- network %>%
+fit_history_1 <- convnet_1 %>%
   fit(
     train_generator,
     steps_per_epoch = 250/test_validation_batch_size,
@@ -117,18 +127,21 @@ fit_history <- network %>%
 ## Analyze training hisotry
 
 ```{r}
-plot(fit_history)
+plot(fit_history_1)
 ```
 
 What epoch had the maximum validation accuracy?
 
 ```{r}
-max_val_accuracy <- max(fit_history$metrics$val_accuracy)
-argmax_val_accuracy <- which.max(fit_history$metrics$val_accuracy)
+max_val_accuracy_1 <- max(fit_history_1$metrics$val_accuracy)
+argmax_val_accuracy_1 <- which.max(fit_history_1$metrics$val_accuracy)
 cat("Maximum val_accuracy: ", max_val_accuracy, "\n")
 cat("Epoch of maximum validation accuracy: ", argmax_val_accuracy, "\n")
-fit_history$metrics$val_accuracy[argmax_val_accuracy]
 ```
+
+## Retrain for the optimum number of epochs
+
+Start everything over in the network.
 
 ```{r echo=FALSE}
 network %>% save_model_hdf5("convnet_and_classifier.h5")
