@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(keras)
+library(tensorflow)
 ```
 
 ## Define where the image datasets are
@@ -120,6 +121,7 @@ The `steps_per_epoch` are calculated from the image generator batch size, accord
 
 
 ```{r error=FALSE, results='hide'}
+tensorflow::set_random_seed(0)
 test_validation_batch_size <- 25
 generators_1 <- create_generators(test_validation_batch_size = test_validation_batch_size)
 fit_history_1 <- convnet_1 %>%
@@ -152,6 +154,7 @@ cat("Epoch of maximum validation accuracy: ", argmax_val_accuracy_1, "\n")
 Start everything over with a new network and new generators.
 
 ```{r error=FALSE, results='hide'}
+tensorflow::set_random_seed(0)
 convnet_2 <- create_network()
 test_validation_batch_size <- 25
 generators_2 <- create_generators(test_validation_batch_size = test_validation_batch_size)
