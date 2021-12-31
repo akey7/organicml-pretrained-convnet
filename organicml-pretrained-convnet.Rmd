@@ -57,6 +57,7 @@ create_generators <- function(test_validation_batch_size) {
     train_datagen,
     target_size = c(256, 256),
     batch_size = test_validation_batch_size,
+    shuffle = FALSE,
     class_mode = "binary"
   )
   
@@ -65,6 +66,7 @@ create_generators <- function(test_validation_batch_size) {
     validation_datagen,
     target_size = c(256, 256),
     batch_size = test_validation_batch_size,
+    shuffle = FALSE,
     class_mode = "binary"
   )
   
@@ -128,7 +130,7 @@ fit_history_1 <- convnet_1 %>%
   fit(
     generators_1$train_generator,
     steps_per_epoch = 250/test_validation_batch_size,
-    epochs = 25,
+    epochs = 50,
     validation_data = generators_1$validation_generator,
     validation_steps = 50/test_validation_batch_size
   )
