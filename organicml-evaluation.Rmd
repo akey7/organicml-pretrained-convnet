@@ -1,0 +1,84 @@
+---
+title: "Organic ML VGG16 Evaluation"
+output:
+  md_document:
+    variant: markdown_github
+---
+
+## Libraries
+
+```{r}
+library(keras)
+library(tibble)
+library(dplyr)
+```
+
+## Recreate generator for evaluation images
+
+```{r}
+batch_size <- 10
+validation_dir <- "data/validation"
+
+validation_datagen <- image_data_generator(rescale = 1/255)
+
+validation_generator <- flow_images_from_directory(
+    validation_dir,
+    validation_datagen,
+    target_size = c(256, 256),
+    batch_size = batch_size,
+    shuffle = FALSE,
+    class_mode = "binary"
+  )
+```
+
+## Reload and Evaluate
+
+Reload and evaluate the best model that was saved.
+
+```{r  error=FALSE, warning=FALSE}
+network <- load_model_hdf5("organicml_checkpoint.h5")
+network %>% evaluate(validation_generator)
+```
+
+## Make a vector of all output from the model
+
+Present each batch of images from the generator (it has already been iterated over once) and obtain the output of the sigmoid activation function that is the last layer of the network.
+
+```{r}
+predicted <- c()
+actual <- c()
+network_input <- c()
+i <- 0
+while(TRUE) {
+  batch <- generator_next(validation_generator)
+  inputs_batch <- batch[[1]]
+  labels_batch <- batch[[2]]
+  predicted <- c(predicted, round(network %>% predict(inputs_batch)))
+  actual <- c(actual, labels_batch)
+  network_input <- c(network_input, inputs_batch)
+  i <- i + 1
+  if (i * batch_size >= validation_generator$samples)
+    break
+}
+```
+
+## Compute the error rate
+
+Assemble a dataframe that lines up predictions alongside the actual labels.
+
+```{r}
+evaluation_df <- tibble(
+    actual = actual,
+    predicted = predicted
+  ) %>%
+  mutate (
+    correct = actual == predicted
+  )
+```
+
+Now compute the error rate (accuracy).
+```{r}
+evaluation_df %>% 
+  summarize(error_rate = sum(correct) / n())
+```
+

@@ -1,6 +1,6 @@
 ---
 title: "Organic ML Pretrained Convnet"
-output: html_document
+output: md_document
 ---
 
 ```{r setup, include=FALSE}
@@ -37,17 +37,6 @@ Create a function to create the generators. This function will be called twice. 
 ```{r warning=FALSE}
 create_generators <- function(test_validation_batch_size) {
   validation_datagen <- image_data_generator(rescale = 1/255)
-
-  # train_datagen <- image_data_generator(
-  #   rescale = 1/255,
-  #   rotation_range = 90,
-  #   width_shift_range = 0.01,
-  #   height_shift_range = 0.01,
-  #   shear_range = 0.2,
-  #   zoom_range = 0.01,
-  #   horizontal_flip = TRUE
-  # )
-  
   train_datagen <- image_data_generator(rescale = 1/255)
   
   train_generator <- flow_images_from_directory(
@@ -121,12 +110,8 @@ Checkpoint every model that shows a better `val_accuracy` than the previous. Sto
 tensorflow::set_random_seed(0)
 
 callbacks_list <- list(
-  callback_early_stopping(
-    monitor = "val_accuracy",
-    patience = 10
-  ),
   callback_model_checkpoint(
-    filepath = "convnet_1_checkpoint.h5",
+    filepath = "organicml_checkpoint.h5",
     monitor = "val_accuracy",
     mode = "max",
     save_best_only = TRUE
@@ -161,11 +146,3 @@ argmax_val_accuracy_1 <- which.max(fit_history_1$metrics$val_accuracy)
 cat("Maximum val_accuracy: ", max_val_accuracy_1, "\n")
 cat("Epoch of maximum validation accuracy: ", argmax_val_accuracy_1, "\n")
 ```
-
-## Reload the best model that was saved
-
-```{r}
-reload_convnet_1 <- load_model_hdf5("convnet_1_checkpoint.h5")
-reload_convnet_1 %>% evaluate(generators_1$validation_generator)
-```
-
