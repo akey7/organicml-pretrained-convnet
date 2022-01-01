@@ -7,7 +7,7 @@ output:
 
 ## Libraries
 
-```{r}
+```{r error=FALSE, warning=FALSE}
 library(keras)
 library(tibble)
 library(dplyr)
@@ -76,9 +76,16 @@ evaluation_df <- tibble(
   )
 ```
 
-Now compute the error rate (accuracy).
-```{r}
-evaluation_df %>% 
-  summarize(error_rate = sum(correct) / n())
-```
+Compute accuracy, true positive rate (tpr), true negative rate (tnr), false negative rate (fnr), and false positive rate (fpr). Using formulas from [https://en.wikipedia.org/wiki/Sensitivity_and_specificity](https://en.wikipedia.org/wiki/Sensitivity_and_specificity).
 
+```{r}
+network_performance <- evaluation_df %>%
+  summarize(
+    accuracy = sum(correct) / n(),
+    tpr = sum(actual == 1 & predicted == 1) / sum(actual == 1),
+    tnr = sum(actual == 0 & predicted == 0) / sum(actual == 0),
+    fpr = sum(actual == 0 & predicted == 1) / sum(actual == 0),
+    fnr = sum(actual == 1 & predicted == 0) / sum(actual == 1)
+  )
+knitr::kable(network_performance)
+```
