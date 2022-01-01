@@ -1,6 +1,6 @@
 ---
 title: "Organic ML Pretrained Convnet"
-output: html_document
+output: md_document
 ---
 
 ```{r setup, include=FALSE}
@@ -121,10 +121,6 @@ Checkpoint every model that shows a better `val_accuracy` than the previous. Sto
 tensorflow::set_random_seed(0)
 
 callbacks_list <- list(
-  callback_early_stopping(
-    monitor = "val_accuracy",
-    patience = 10
-  ),
   callback_model_checkpoint(
     filepath = "convnet_1_checkpoint.h5",
     monitor = "val_accuracy",
