@@ -10,6 +10,7 @@ output:
 ```{r}
 library(keras)
 library(tibble)
+library(dplyr)
 ```
 
 ## Recreate generator for evaluation images
@@ -39,29 +40,31 @@ network <- load_model_hdf5("organicml_checkpoint.h5")
 network %>% evaluate(validation_generator)
 ```
 
-## Assemble a tibble of the labeled validation data
+## Make a vector of all output from the model
+
+Present each batch of images from the generator (it has already been iterated over once) and obtain the output of the sigmoid activation function that is the last layer of the network.
 
 ```{r}
-evaluation_df <- tibble(
-  filepath = validation_generator[["_filepaths"]],
-  actual = validation_generator[["classes"]]
-)
-```
-
-## Make a vector of all predictions
-
-```{r}
-network_output <- c()
+predicted <- c()
 i <- 0
 while(TRUE) {
   batch <- generator_next(validation_generator)
   inputs_batch <- batch[[1]]
   labels_batch <- batch[[2]]
-  network_output <- c(network_output, network %>% predict(inputs_batch))
-  # if (i * batch_size >= sample_count)
-  #   break
-  break
+  predicted <- c(predicted, round(network %>% predict(inputs_batch)))
+  i <- i + 1
+  if (i * batch_size >= validation_generator$samples)
+    break
 }
-network_output
+predicted
 ```
 
+## Assemble a tibble of the labeled validation data
+
+```{r}
+evaluation_df <- tibble(
+    filepath = validation_generator[["_filepaths"]],
+    actual = validation_generator[["classes"]],
+    predicted = predicted
+  )
+```
