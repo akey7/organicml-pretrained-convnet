@@ -76,8 +76,7 @@ evaluation_df <- tibble(
   )
 ```
 
-Now compute the error rate
-
+Now compute the error rate (accuracy).
 ```{r}
 evaluation_df %>% 
   summarize(error_rate = sum(correct) / n())
