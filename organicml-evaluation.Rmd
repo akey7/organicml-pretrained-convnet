@@ -11,6 +11,7 @@ output:
 library(keras)
 library(tibble)
 library(dplyr)
+library(readr)
 ```
 
 ## Recreate generator for evaluation images
@@ -64,15 +65,13 @@ while(TRUE) {
 
 ## Compute the error rate
 
-Assemble a dataframe that lines up predictions alongside the actual labels.
+Assemble a dataframe that lines up predictions alongside the actual labels and the input image filename.
 
 ```{r}
 evaluation_df <- tibble(
+    image_filename = validation_generator$filepaths,
     actual = actual,
     predicted = predicted
-  ) %>%
-  mutate (
-    correct = actual == predicted
   )
 ```
 
@@ -81,11 +80,19 @@ Compute accuracy, true positive rate (tpr), true negative rate (tnr), false nega
 ```{r}
 network_performance <- evaluation_df %>%
   summarize(
-    accuracy = sum(correct) / n(),
+    accuracy = sum(actual == predicted) / n(),
     tpr = sum(actual == 1 & predicted == 1) / sum(actual == 1),
     tnr = sum(actual == 0 & predicted == 0) / sum(actual == 0),
     fpr = sum(actual == 0 & predicted == 1) / sum(actual == 0),
     fnr = sum(actual == 1 & predicted == 0) / sum(actual == 1)
   )
 knitr::kable(network_performance)
+```
+
+## Create a csv of failed classification attempts
+
+```{r}
+evaluation_df %>%
+  filter(actual != predicted) %>%
+  write_csv("organicml-evaluation-failures.csv")
 ```

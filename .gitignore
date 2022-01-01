@@ -48,3 +48,6 @@ vignettes/*.pdf
 *.html
 *.md
 *_files/*
+
+# Ignore intermediate csv files
+*.csv
