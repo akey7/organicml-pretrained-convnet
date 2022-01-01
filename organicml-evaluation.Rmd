@@ -8,12 +8,60 @@ output:
 ## Libraries
 
 ```{r}
-
+library(keras)
+library(tibble)
 ```
 
-## Reload the best model that was saved
+## Recreate generator for evaluation images
 
 ```{r}
-reload_convnet_1 <- load_model_hdf5("convnet_1_checkpoint.h5")
-reload_convnet_1 %>% evaluate(generators_1$validation_generator)
+batch_size <- 25
+validation_dir <- "data/validation"
+
+validation_datagen <- image_data_generator(rescale = 1/255)
+
+validation_generator <- flow_images_from_directory(
+    validation_dir,
+    validation_datagen,
+    target_size = c(256, 256),
+    batch_size = batch_size,
+    shuffle = FALSE,
+    class_mode = "binary"
+  )
 ```
+
+## Reload and Evaluate
+
+Reload and evaluate the best model that was saved.
+
+```{r  error=FALSE, warning=FALSE}
+network <- load_model_hdf5("organicml_checkpoint.h5")
+network %>% evaluate(validation_generator)
+```
+
+## Assemble a tibble of the labeled validation data
+
+```{r}
+evaluation_df <- tibble(
+  filepath = validation_generator[["_filepaths"]],
+  actual = validation_generator[["classes"]]
+)
+```
+
+## Make a vector of all predictions
+
+```{r}
+network_output <- c()
+i <- 0
+while(TRUE) {
+  batch <- generator_next(validation_generator)
+  inputs_batch <- batch[[1]]
+  labels_batch <- batch[[2]]
+  network_output <- c(network_output, network %>% predict(inputs_batch))
+  # if (i * batch_size >= sample_count)
+  #   break
+  break
+}
+network_output
+```
+
