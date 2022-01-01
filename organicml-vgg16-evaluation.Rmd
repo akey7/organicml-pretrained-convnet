@@ -1,0 +1,19 @@
+---
+title: "Organic ML VGG16 Evaluation"
+output:
+  md_document:
+    variant: markdown_github
+---
+
+## Libraries
+
+```{r}
+
+```
+
+## Reload the best model that was saved
+
+```{r}
+reload_convnet_1 <- load_model_hdf5("convnet_1_checkpoint.h5")
+reload_convnet_1 %>% evaluate(generators_1$validation_generator)
+```
