@@ -16,7 +16,7 @@ library(dplyr)
 ## Recreate generator for evaluation images
 
 ```{r}
-batch_size <- 25
+batch_size <- 10
 validation_dir <- "data/validation"
 
 validation_datagen <- image_data_generator(rescale = 1/255)
@@ -46,25 +46,40 @@ Present each batch of images from the generator (it has already been iterated ov
 
 ```{r}
 predicted <- c()
+actual <- c()
+network_input <- c()
 i <- 0
 while(TRUE) {
   batch <- generator_next(validation_generator)
   inputs_batch <- batch[[1]]
   labels_batch <- batch[[2]]
   predicted <- c(predicted, round(network %>% predict(inputs_batch)))
+  actual <- c(actual, labels_batch)
+  network_input <- c(network_input, inputs_batch)
   i <- i + 1
   if (i * batch_size >= validation_generator$samples)
     break
 }
-predicted
 ```
 
-## Assemble a tibble of the labeled validation data
+## Compute the error rate
+
+Assemble a dataframe that lines up predictions alongside the actual labels.
 
 ```{r}
 evaluation_df <- tibble(
-    filepath = validation_generator[["_filepaths"]],
-    actual = validation_generator[["classes"]],
+    actual = actual,
     predicted = predicted
+  ) %>%
+  mutate (
+    correct = actual == predicted
   )
 ```
+
+Now compute the error rate
+
+```{r}
+evaluation_df %>% 
+  summarize(error_rate = sum(correct) / n())
+```
+
