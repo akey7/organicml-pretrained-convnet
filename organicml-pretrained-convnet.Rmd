@@ -94,11 +94,11 @@ create_network <- function() {
     layer_dense(units = 256, activation = "relu") %>%
     layer_dense(units = 128, activation = "relu") %>%
     layer_dense(units = 64, activation = "relu") %>%
-   layer_dense(units = 1, activation = "sigmoid")
+    layer_dense(units = 1, activation = "sigmoid")
   
   network %>% compile(
     loss = "binary_crossentropy",
-    optimizer = optimizer_rmsprop(learning_rate = 2e-5),
+    optimizer = optimizer_rmsprop(learning_rate = 0.5e-5),
     metrics = c("accuracy")
   )
   
@@ -128,7 +128,7 @@ fit_history_1 <- convnet_1 %>%
   fit(
     generators_1$train_generator,
     steps_per_epoch = 300/test_validation_batch_size,
-    epochs = 21,
+    epochs = 30,
     validation_data = generators_1$validation_generator,
     validation_steps = 110/test_validation_batch_size
   )
