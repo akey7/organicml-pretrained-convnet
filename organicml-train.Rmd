@@ -22,8 +22,8 @@ There is a small dataset of 410 images. Because there are so few images, I will 
 
 |dataset|benzene ring images|non benzene ring images
 |---|---|---|
-|train|150|150|
-|validation|55|55|
+|train|152|148|
+|validation|57|53|
 
 ```{r}
 train_dir <- "data/train"
