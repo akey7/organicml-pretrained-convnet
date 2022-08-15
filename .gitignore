@@ -51,3 +51,6 @@ vignettes/*.pdf
 
 # Ignore intermediate csv files
 *.csv
+
+# Ignore macOS junk
+.DS_Store
